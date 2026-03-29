@@ -1,10 +1,11 @@
 @echo off
+setlocal enabledelayedexpansion
 echo ============================================
-echo   Antigravity Auto-Retry Patcher v3.0
+echo   Antigravity Auto-Retry Patcher v3.1
 echo ============================================
 echo.
 
-:: ===== Автоопределение пути Antigravity =====
+:: ===== Auto-detect Antigravity path =====
 set "AG_DIR="
 if exist "C:\Antigravity\resources\app\product.json" set "AG_DIR=C:\Antigravity\resources\app"
 if not defined AG_DIR if exist "C:\Program Files\Antigravity\resources\app\product.json" set "AG_DIR=C:\Program Files\Antigravity\resources\app"
@@ -13,8 +14,8 @@ if not defined AG_DIR if exist "%LOCALAPPDATA%\Programs\Antigravity\resources\ap
 if not defined AG_DIR if exist "%LOCALAPPDATA%\antigravity\resources\app\product.json" set "AG_DIR=%LOCALAPPDATA%\antigravity\resources\app"
 
 if not defined AG_DIR (
-    echo [ОШИБКА] Antigravity не найден!
-    set /p "AG_DIR=Введите путь к resources\app: "
+    echo [ERROR] Antigravity not found!
+    set /p "AG_DIR=Enter path to resources\app: "
 )
 
 echo [OK] Antigravity: %AG_DIR%
@@ -27,7 +28,7 @@ set "SRC_DIR=%~dp0"
 set "BUNDLE=%SRC_DIR%dist\auto-retry.bundle.js"
 
 if not exist "%AG_DIR%" (
-    echo [ОШИБКА] Путь не существует: %AG_DIR%
+    echo [ERROR] Path does not exist: %AG_DIR%
     pause
     exit /b 1
 )
@@ -36,7 +37,7 @@ if not exist "%BUNDLE%" (
     echo [INFO] Bundle not found. Building...
     node "%SRC_DIR%build.js"
     if not exist "%BUNDLE%" (
-        echo [ОШИБКА] Build failed!
+        echo [ERROR] Build failed!
         pause
         exit /b 1
     )
@@ -62,8 +63,7 @@ powershell -Command "$c = Get-Content '%HTML_FILE%' -Raw; $tag = '<script src=\"
 
 findstr /C:"auto-retry.js" "%HTML_FILE%" >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [ОШИБКА] Failed to inject script!
-    echo Restoring backup...
+    echo [ERROR] Failed to inject script!
     copy /Y "%HTML_FILE%.bak" "%HTML_FILE%" >nul
     pause
     exit /b 1

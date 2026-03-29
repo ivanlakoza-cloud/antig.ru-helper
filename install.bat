@@ -1,64 +1,47 @@
 @echo off
-chcp 65001 >nul
+setlocal enabledelayedexpansion
 echo.
-echo   ╔══════════════════════════════════════════╗
-echo   ║   AntiG.ru Helper — Установка v3.0       ║
-echo   ╚══════════════════════════════════════════╝
+echo   AntiG.ru Helper - Install v3.1
+echo   ================================
 echo.
 
-:: Проверка Node.js
+:: Check Node.js
 where node >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [ОШИБКА] Node.js не найден!
-    echo Установите с https://nodejs.org/ и повторите.
+    echo [ERROR] Node.js not found!
+    echo Install from https://nodejs.org/ and try again.
     pause
     exit /b 1
 )
 
-:: ===== Автоопределение пути Antigravity =====
+:: ===== Auto-detect Antigravity path =====
 set "AG_DIR="
 
-:: Вариант 1: C:\Antigravity
-if exist "C:\Antigravity\resources\app\product.json" set "AG_DIR=C:\Antigravity\resources\app"
-
-:: Вариант 2: Program Files
-if not defined AG_DIR if exist "C:\Program Files\Antigravity\resources\app\product.json" set "AG_DIR=C:\Program Files\Antigravity\resources\app"
-
-:: Вариант 3: LocalAppData\Programs\antigravity
-if not defined AG_DIR if exist "%LOCALAPPDATA%\Programs\antigravity\resources\app\product.json" set "AG_DIR=%LOCALAPPDATA%\Programs\antigravity\resources\app"
-
-:: Вариант 4: LocalAppData\Programs\Antigravity
-if not defined AG_DIR if exist "%LOCALAPPDATA%\Programs\Antigravity\resources\app\product.json" set "AG_DIR=%LOCALAPPDATA%\Programs\Antigravity\resources\app"
-
-:: Вариант 5: LocalAppData\antigravity
-if not defined AG_DIR if exist "%LOCALAPPDATA%\antigravity\resources\app\product.json" set "AG_DIR=%LOCALAPPDATA%\antigravity\resources\app"
-
-:: Вариант 6: Поиск по диску C
-if not defined AG_DIR (
-    echo [INFO] Стандартные пути не найдены, ищу Antigravity...
-    for /f "delims=" %%i in ('where /r "%LOCALAPPDATA%" product.json 2^>nul ^| findstr /i "antigravity\\resources\\app\\product.json"') do (
-        set "AG_DIR=%%~dpi"
-        goto :found
-    )
-    for /f "delims=" %%i in ('where /r "C:\Program Files" product.json 2^>nul ^| findstr /i "antigravity\\resources\\app\\product.json"') do (
-        set "AG_DIR=%%~dpi"
-        goto :found
-    )
+if exist "C:\Antigravity\resources\app\product.json" (
+    set "AG_DIR=C:\Antigravity\resources\app"
+)
+if not defined AG_DIR if exist "C:\Program Files\Antigravity\resources\app\product.json" (
+    set "AG_DIR=C:\Program Files\Antigravity\resources\app"
+)
+if not defined AG_DIR if exist "%LOCALAPPDATA%\Programs\antigravity\resources\app\product.json" (
+    set "AG_DIR=%LOCALAPPDATA%\Programs\antigravity\resources\app"
+)
+if not defined AG_DIR if exist "%LOCALAPPDATA%\Programs\Antigravity\resources\app\product.json" (
+    set "AG_DIR=%LOCALAPPDATA%\Programs\Antigravity\resources\app"
+)
+if not defined AG_DIR if exist "%LOCALAPPDATA%\antigravity\resources\app\product.json" (
+    set "AG_DIR=%LOCALAPPDATA%\antigravity\resources\app"
 )
 
-:found
-:: Убрать завершающий слеш если есть
-if defined AG_DIR if "%AG_DIR:~-1%"=="\" set "AG_DIR=%AG_DIR:~0,-1%"
-
 if not defined AG_DIR (
-    echo [ОШИБКА] Antigravity не найден!
+    echo [INFO] Antigravity not found in standard paths.
     echo.
-    echo Укажите путь вручную. Введите путь к папке resources\app:
-    echo Например: C:\Users\UserName\AppData\Local\Programs\antigravity\resources\app
+    echo Enter path to Antigravity resources\app folder:
+    echo Example: C:\Users\YourName\AppData\Local\Programs\antigravity\resources\app
     echo.
-    set /p "AG_DIR=Путь: "
+    set /p "AG_DIR=Path: "
     if not exist "!AG_DIR!\product.json" (
-        echo [ОШИБКА] product.json не найден по указанному пути.
+        echo [ERROR] product.json not found at that path.
         pause
         exit /b 1
     )
@@ -74,33 +57,33 @@ set "SRC_DIR=%~dp0"
 set "BUNDLE=%SRC_DIR%dist\auto-retry.bundle.js"
 
 if not exist "%HTML_FILE%" (
-    echo [ОШИБКА] Файл workbench не найден: %HTML_FILE%
+    echo [ERROR] Workbench file not found: %HTML_FILE%
     pause
     exit /b 1
 )
 
-:: Сборка
-echo [1/4] Сборка...
+:: Build
+echo [1/4] Building...
 node "%SRC_DIR%build.js"
 if not exist "%BUNDLE%" (
-    echo [ОШИБКА] Сборка провалилась!
+    echo [ERROR] Build failed!
     pause
     exit /b 1
 )
 
-:: Копирование
-echo [2/4] Копирование в Antigravity...
+:: Copy
+echo [2/4] Copying to Antigravity...
 copy /Y "%BUNDLE%" "%RETRY_JS%" >nul
-echo       Готово.
+echo       Done.
 
-:: Инъекция в HTML
+:: Inject into HTML
 findstr /C:"auto-retry.js" "%HTML_FILE%" >nul 2>&1
 if %errorlevel%==0 (
-    echo [3/4] Уже установлен. Обновление.
+    echo [3/4] Already installed. Updating.
     goto :update_checksum
 )
 
-echo [3/4] Установка патча...
+echo [3/4] Installing patch...
 copy /Y "%HTML_FILE%" "%HTML_FILE%.bak" >nul
 copy /Y "%PRODUCT_JSON%" "%PRODUCT_JSON%.bak" >nul
 
@@ -108,28 +91,28 @@ powershell -Command "$c = Get-Content '%HTML_FILE%' -Raw; $tag = '<script src=\"
 
 findstr /C:"auto-retry.js" "%HTML_FILE%" >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [ОШИБКА] Не удалось установить патч!
+    echo [ERROR] Failed to inject script!
     copy /Y "%HTML_FILE%.bak" "%HTML_FILE%" >nul
     pause
     exit /b 1
 )
-echo       Патч установлен.
+echo       Patch installed.
 
 :update_checksum
-echo [4/4] Обновление контрольной суммы...
+echo [4/4] Updating checksum...
 powershell -Command "$bytes = [System.IO.File]::ReadAllBytes('%HTML_FILE%'); $sha = [System.Security.Cryptography.SHA256]::Create(); $hash = [Convert]::ToBase64String($sha.ComputeHash($bytes)); $c = Get-Content '%PRODUCT_JSON%' -Raw; $c = [regex]::Replace($c, '(\"vs/code/electron-browser/workbench/workbench-jetski-agent\.html\": \")([^\"]+)(\")', '${1}' + $hash + '${3}'); [System.IO.File]::WriteAllText('%PRODUCT_JSON%', $c); Write-Host '      OK'"
 
 echo.
-echo   ╔══════════════════════════════════════════╗
-echo   ║   Установка завершена!                    ║
-echo   ║   Перезапустите Antigravity.              ║
-echo   ╚══════════════════════════════════════════╝
+echo   ================================
+echo   Install complete!
+echo   Restart Antigravity to activate.
+echo   ================================
 echo.
-echo   Что делает:
-echo     - Auto-retry при ошибках 429/502/503
-echo     - Auto-click "Try again" / "Retry" / "Run"
-echo     - Подавление звуков ошибок
+echo   Features:
+echo     - Auto-retry on errors 429/502/503
+echo     - Auto-click Try again / Retry / Run
+echo     - Error sound muting
 echo.
-echo   Удаление: запустите uninstall.bat
+echo   To uninstall: run uninstall.bat
 echo.
 pause
