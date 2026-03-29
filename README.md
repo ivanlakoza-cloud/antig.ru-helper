@@ -9,30 +9,30 @@
 - 🔇 **Mute** — подавляет звуки ошибок при retry
 - 📊 **Badge** — индикатор ON/OFF в статусбаре
 
-## Установка (Windows)
+## Установка
 
-### Вариант 1: Одной командой (PowerShell)
+Откройте терминал (`Ctrl + ~`) и вставьте команду:
+
+### Windows (PowerShell)
 
 ```powershell
-git clone https://github.com/ivanlakoza-cloud/antig.ru-helper.git; cd antig.ru-helper; .\install.bat
+cd $env:TEMP; Invoke-WebRequest https://github.com/ivanlakoza-cloud/antig.ru-helper/archive/refs/heads/main.zip -OutFile helper.zip; Expand-Archive -Path helper.zip -DestinationPath . -Force; cd antig.ru-helper-main; node build.js; cmd /c install.bat
 ```
 
-### Вариант 2: Пошагово
+### macOS (Terminal)
 
-```cmd
-git clone https://github.com/ivanlakoza-cloud/antig.ru-helper.git
-cd antig.ru-helper
-install.bat
+```bash
+cd /tmp && curl -sL https://github.com/ivanlakoza-cloud/antig.ru-helper/archive/refs/heads/main.zip -o helper.zip && unzip -o helper.zip && cd antig.ru-helper-main && node build.js && chmod +x patch.sh && ./patch.sh
+```
+
+### Linux (Terminal)
+
+```bash
+cd /tmp && curl -sL https://github.com/ivanlakoza-cloud/antig.ru-helper/archive/refs/heads/main.zip -o helper.zip && unzip -o helper.zip && cd antig.ru-helper-main && node build.js && chmod +x patch.sh && ./patch.sh
 ```
 
 > После установки **перезапустите Antigravity**.
 
-### Вариант 3: Без Git
-
-1. Скачайте [ZIP-архив](https://github.com/ivanlakoza-cloud/antig.ru-helper/archive/refs/heads/main.zip)
-2. Распакуйте
-3. Запустите `install.bat`
-4. Перезапустите Antigravity
 
 ## Удаление
 
