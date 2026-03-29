@@ -71,10 +71,15 @@ if not exist "%BUNDLE%" (
     exit /b 1
 )
 
-:: Copy
+:: Copy using PowerShell (cmd copy fails silently when called via cmd /c from PS)
 echo [2/4] Copying to Antigravity...
-copy /Y "%BUNDLE%" "%RETRY_JS%" >nul
-echo       Done.
+powershell -Command "Copy-Item -Path '%BUNDLE%' -Destination '%RETRY_JS%' -Force"
+if not exist "%RETRY_JS%" (
+    echo [ERROR] Copy failed! Try running as Administrator.
+    pause
+    exit /b 1
+)
+echo       Done. Verified.
 
 :: Inject into HTML
 findstr /C:"auto-retry.js" "%HTML_FILE%" >nul 2>&1
