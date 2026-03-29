@@ -1,0 +1,21 @@
+# Build output
+dist/
+
+# Backups
+*.bak
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Node
+node_modules/
+
+# Old monolith (replaced by src/ modules)
+# auto-retry.js is kept as a redirect stub
