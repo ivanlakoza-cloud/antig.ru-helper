@@ -28,7 +28,7 @@ const CONFIG = {
     domResetTimeout: 5 * 60 * 1000,
 
     // === Тексты для поиска ===
-    retryButtonTexts: ['try again', 'retry'],
+    retryButtonTexts: ['try again', 'retry', 'run'],
     errorTexts: [
         'high traffic', 'servers are experiencing', 'try again in a minute',
         'too many requests', 'rate limit', 'agent terminated due to error',

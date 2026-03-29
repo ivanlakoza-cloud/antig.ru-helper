@@ -1,25 +1,37 @@
-# Antigravity Auto-Retry Patch + Token Tracking
+# Antigravity Auto-Retry Patch
 
-Патч для Antigravity IDE: автоматический retry при серверных ошибках + подсчёт токенов по моделям с графиками.
+Патч для [Antigravity IDE](https://antigravity.dev): автоматический retry при серверных ошибках (429, 502, 503 и др.), auto-click кнопок "Try again" / "Retry" / "Run", подавление звуков ошибок.
+
+## Возможности
+
+| Уровень | Что делает |
+|---|---|
+| **Level 1** | HTTP retry (429/502/503/520/522/524) с exponential backoff |
+| **Level 2** | Connect/gRPC stream error retry (resource_exhausted, unavailable и др.) |
+| **Level 3** | Подавление звуков ошибок при retry |
+| **Level 4** | Auto-click "Try again" / "Retry" / "Run" (MutationObserver + periodic scan + XPath) |
+| **UI** | Badge в статусбаре с индикатором ON/OFF и счётчиком retry |
 
 ## Установка
 
 ### Windows
+
 ```cmd
 node build.js
 patch.bat
-:: Перезапустить Antigravity
 ```
 
 ### macOS / Linux
+
 ```bash
 node build.js
 chmod +x patch.sh
 ./patch.sh
-# Перезапустить Antigravity
 ```
 
-> **Примечание для macOS:** Если Antigravity установлен не в `/Applications/Antigravity.app/`, отредактируйте `AG_DIR` в `patch.sh`.
+Перезапустите Antigravity после установки.
+
+> **macOS:** Если Antigravity установлен не в `/Applications/Antigravity.app/`, отредактируйте `AG_DIR` в `patch.sh`.
 
 ## Откат
 
@@ -27,53 +39,62 @@ chmod +x patch.sh
 |---|---|
 | `unpatch.bat` | `chmod +x unpatch.sh && ./unpatch.sh` |
 
+Перезапустите Antigravity после отката.
+
+## После обновления Antigravity
+
+Запустить `patch.bat` (Win) или `./patch.sh` (Mac/Linux) повторно → перезапустить IDE.
+
 ## Структура проекта
 
 ```
-├── src/                    ← Исходные модули (каждый ≤ 300 строк)
-│   ├── config.js           ← Конфигурация
-│   ├── state.js            ← Состояние + логгер + TrustedTypes
-│   ├── fetch-retry.js      ← Fetch retry + token tracking
-│   ├── audio-mute.js       ← Подавление звуков ошибок
-│   ├── dom-clicker.js      ← DOM auto-click
-│   ├── status-badge.js     ← UI: Retry badge
-│   ├── token-parser.js     ← Парсинг usageMetadata
-│   ├── token-store.js      ← localStorage хранилище
-│   ├── token-ui.js         ← UI: Token panel + badge
-│   └── entry.js            ← Entry point + API
-├── build.js                ← Сборка (с проверкой лимита 300 строк)
-├── dist/                   ← Собранный bundle
-├── patch.bat / patch.sh    ← Установка (Windows / macOS)
-├── unpatch.bat / unpatch.sh← Откат
-└── CONTRIBUTING.md         ← Правила разработки
+├── src/                     ← Исходные модули (каждый ≤ 300 строк)
+│   ├── config.js            ← Конфигурация
+│   ├── state.js             ← Состояние + логгер + TrustedTypes
+│   ├── status-badge.js      ← UI badge в статусбаре
+│   ├── fetch-retry.js       ← Level 1+2: Fetch + Connect stream retry
+│   ├── audio-mute.js        ← Level 3: Подавление звуков ошибок
+│   ├── dom-clicker.js       ← Level 4: DOM auto-click
+│   └── entry.js             ← Точка входа + public API
+├── build.js                 ← Сборка (с проверкой лимита 300 строк)
+├── dist/                    ← Собранный bundle (в .gitignore)
+├── patch.bat / patch.sh     ← Установка
+├── unpatch.bat / unpatch.sh ← Откат
+└── CONTRIBUTING.md          ← Правила разработки
 ```
-
-## Возможности
-
-### Auto-Retry (4 уровня)
-- **Level 1:** HTTP status retry (429/502/503) — exponential backoff
-- **Level 2:** Connect stream error retry (resource_exhausted и др.)
-- **Level 3:** Подавление звуков ошибок
-- **Level 4:** Auto-click "Try again" (MutationObserver + scan + XPath)
-
-### Token Tracking
-- Подсчёт input/output/thinking/cached токенов
-- Разбивка по моделям
-- Canvas-графики за день/неделю/месяц
-- Хранение 30 дней в localStorage
-- Экспорт в JSON
 
 ## API (DevTools Console)
 
 ```javascript
-window.__autoRetry.toggle()              // Вкл/Выкл retry
-window.__autoRetry.getState()            // Состояние
+window.__autoRetry.toggle()          // Вкл/Выкл retry
+window.__autoRetry.getState()        // Текущее состояние
+window.__autoRetry.diagnose()        // Список всех кнопок в DOM
+window.__autoRetry.setDelay(1000)    // Задержка перед auto-click (ms)
+window.__autoRetry.resetClicks()     // Сбросить счётчик кликов
+window.__autoRetry.flash('Hello!')   // Тестовая flash-анимация badge
+window.__autoRetry.showBadge()       // Показать badge
+window.__autoRetry.hideBadge()       // Скрыть badge
+```
 
-window.__autoRetry.tokens.session()      // Сводка сессии
-window.__autoRetry.tokens.period('week') // Сводка за период
-window.__autoRetry.tokens.panel()        // Показать popup
-window.__autoRetry.tokens.export()       // Экспорт JSON
-window.__autoRetry.tokens.clear()        // Очистить данные
+## Конфигурация
+
+Настройки доступны через `window.__autoRetry.config`:
+
+```javascript
+// Retry
+config.fetchMaxRetries = 8           // Макс. кол-во retry
+config.fetchRetryBaseDelay = 5000    // Базовая задержка (ms)
+config.fetchRetryMaxDelay = 60000    // Макс. задержка (ms)
+
+// Auto-click
+config.domEnabled = true             // Вкл/выкл auto-click
+config.domClickDelay = 500           // Задержка перед кликом (ms)
+config.domMaxClicks = 100            // Макс. кликов до сброса
+config.retryButtonTexts              // ['try again', 'retry', 'run']
+
+// Другое
+config.muteErrorSounds = true        // Подавлять звуки
+config.logEnabled = true             // Логирование в console
 ```
 
 ## Кроссплатформенность
@@ -82,13 +103,9 @@ window.__autoRetry.tokens.clear()        // Очистить данные
 |---|---|---|---|
 | `auto-retry.bundle.js` | ✅ | ✅ | ✅ |
 | `build.js` | ✅ | ✅ | ✅ |
-| `patch.bat` | ✅ | — | — |
-| `patch.sh` | — | ✅ | ✅ |
+| `patch.bat` / `unpatch.bat` | ✅ | — | — |
+| `patch.sh` / `unpatch.sh` | — | ✅ | ✅ |
 
-## После обновления Antigravity
+## Лицензия
 
-Запустить `patch.bat` (Win) или `./patch.sh` (Mac) → перезапустить.
-
-## Правила разработки
-
-См. [CONTRIBUTING.md](CONTRIBUTING.md) — лимит 300 строк на файл, модульность.
+MIT

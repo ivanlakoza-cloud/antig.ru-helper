@@ -16,6 +16,3 @@ Desktop.ini
 
 # Node
 node_modules/
-
-# Old monolith (replaced by src/ modules)
-# auto-retry.js is kept as a redirect stub

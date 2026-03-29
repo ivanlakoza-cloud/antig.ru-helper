@@ -1,6 +1,6 @@
 @echo off
 echo ============================================
-echo   Antigravity Auto-Retry Patcher v2.0
+echo   Antigravity Auto-Retry Patcher v3.0
 echo ============================================
 echo.
 
@@ -68,6 +68,5 @@ echo ============================================
 echo.
 echo Logs: DevTools (Ctrl+Shift+I) - Console
 echo API: window.__autoRetry
-echo Tokens: window.__autoRetry.tokens
 echo.
 pause

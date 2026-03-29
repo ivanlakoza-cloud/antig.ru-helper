@@ -59,7 +59,7 @@ function initDomClicker() {
 
             // Стратегия 3: XPath
             try {
-                const xp = "//text()[normalize-space()='Try again' or normalize-space()='Retry']";
+                const xp = "//text()[normalize-space()='Try again' or normalize-space()='Retry' or normalize-space()='Run']";
                 const res = document.evaluate(xp, document.body, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
                 for (let i = 0; i < res.snapshotLength; i++) {
                     let el = res.snapshotItem(i).parentElement;

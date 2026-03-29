@@ -7,7 +7,7 @@
  * 
  * Использование: node build.js
  * 
- * @version 1.0
+ * @version 2.0
  */
 
 const fs = require('fs');
@@ -22,10 +22,7 @@ const MODULE_ORDER = [
     'config.js',        // Конфигурация (нет зависимостей)
     'state.js',         // Состояние + логгер (зависит от config)
     'status-badge.js',  // UI badge (зависит от config, state)
-    'token-parser.js',  // Парсинг usageMetadata (зависит от config, state)
-    'token-store.js',   // Хранилище токенов (зависит от config, state)
-    'token-ui.js',      // UI токенов (зависит от token-store)
-    'fetch-retry.js',   // Fetch retry + token tracking (зависит от всех выше)
+    'fetch-retry.js',   // Fetch retry (зависит от config, state, badge)
     'audio-mute.js',    // Audio mute (зависит от config, state)
     'dom-clicker.js',   // DOM clicker (зависит от всех)
     'entry.js'          // Entry point + public API (зависит от всех)
@@ -62,7 +59,7 @@ if (hasErrors) {
 // Собираем bundle
 console.log('\nСборка bundle...');
 
-let bundle = `/**\n * Antigravity Auto-Retry Patch v2.1 — Bundle\n * Собрано: ${new Date().toISOString()}\n * Модули: ${MODULE_ORDER.join(', ')}\n */\n`;
+let bundle = `/**\n * Antigravity Auto-Retry Patch v3.0 — Bundle\n * Собрано: ${new Date().toISOString()}\n * Модули: ${MODULE_ORDER.join(', ')}\n */\n`;
 bundle += '(function() {\n    \'use strict\';\n\n';
 
 for (const file of MODULE_ORDER) {

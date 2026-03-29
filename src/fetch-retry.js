@@ -6,7 +6,7 @@
  * 
  * Зависимости: config.js, state.js, status-badge.js
  * 
- * @version 2.1
+ * @version 3.0
  */
 
 const originalFetch = window.fetch;
@@ -55,41 +55,13 @@ async function peekConnectError(response) {
 }
 
 /**
- * Асинхронно извлечь и сохранить данные о токенах (не блокирует response)
- * @param {Response} response - Исходный Response (будет склонирован)
- * @param {string} url - URL запроса
- * @param {number} startTime - Время начала запроса
- * @param {string} status - 'ok' | 'retry'
- */
-function trackTokenUsage(response, url, startTime, status) {
-    // Запускаем асинхронно, не блокируя возврат response
-    extractTokenUsage(response).then(usage => {
-        if (!usage || usage.totalTokens === 0) return;
-        const model = extractModelFromUrl(url);
-        addTokenRecord({
-            model,
-            promptTokens: usage.promptTokens,
-            outputTokens: usage.outputTokens,
-            thinkTokens: usage.thinkTokens,
-            cachedTokens: usage.cachedTokens,
-            totalTokens: usage.totalTokens,
-            duration: Date.now() - startTime,
-            status
-        });
-        updateTokenBadge();
-    }).catch(() => {});
-}
-
-/**
  * Инициализация fetch monkey-patch
- * Заменяет window.fetch на обёртку с retry логикой + трекинг токенов
+ * Заменяет window.fetch на обёртку с retry логикой
  */
 function initFetchRetry() {
     window.fetch = async function(...args) {
         if (!STATE.retryActive) return originalFetch.apply(this, args);
 
-        const requestUrl = args[0]?.url || args[0] || '';
-        const startTime = Date.now();
         let lastError = null;
 
         for (let attempt = 0; attempt <= CONFIG.fetchMaxRetries; attempt++) {
@@ -125,14 +97,15 @@ function initFetchRetry() {
                     flashBadge('Retry OK!', '#16a34a', 3000);
                 }
 
-                // Token tracking (async — не блокирует return)
-                trackTokenUsage(response, requestUrl, startTime, attempt > 0 ? 'retry' : 'ok');
-
                 return response;
 
             } catch (error) {
                 lastError = error;
-                if (error.name === 'AbortError') throw error;
+                // Не ретраить таймауты и аборты — это штатное поведение
+                if (error.name === 'AbortError' || error.name === 'TimeoutError') throw error;
+                if (error.message && (error.message.includes('timed out') || 
+                    error.message.includes('aborted') || 
+                    error.message.includes('signal'))) throw error;
                 if (attempt < CONFIG.fetchMaxRetries) {
                     const delay = retryDelay(attempt);
                     STATE.fetchRetryCount++;
@@ -149,5 +122,4 @@ function initFetchRetry() {
 
     log('[FETCH] Monkey-patch active. Retry on HTTP:', CONFIG.fetchRetryStatuses.join(', '));
     log('[STREAM] Connect body interception active.');
-    log('[TOKENS] Token tracking integrated.');
 }

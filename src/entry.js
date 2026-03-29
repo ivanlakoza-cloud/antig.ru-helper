@@ -2,21 +2,20 @@
  * entry.js — Entry Point
  * 
  * Точка входа Auto-Retry Patch.
- * Инициализирует все уровни защиты + трекинг токенов.
+ * Инициализирует все уровни защиты.
  * 
- * @version 2.2
+ * @version 3.0
  */
 
 // Инициализация всех уровней
-initFetchRetry();   // Level 1+2: Fetch + Stream + Token tracking
-initAudioMute();    // Level 3: Audio muting
-initDomClicker();   // Level 4: DOM auto-click
-initBadge();        // UI: Status bar badge (retry)
-initTokenBadge();   // UI: Status bar badge (tokens)
+initFetchRetry();    // Level 1+2: Fetch + Stream retry
+initAudioMute();     // Level 3: Audio muting
+initDomClicker();    // Level 4: DOM auto-click
+initBadge();         // UI: Status bar badge
 
 // ===== PUBLIC API =====
 window.__autoRetry = {
-    version: '2.2',
+    version: '3.0',
     config: CONFIG,
     getState: () => ({
         retryActive: STATE.retryActive,
@@ -44,32 +43,8 @@ window.__autoRetry = {
             const t = (b.textContent || '').trim();
             if (t) log(`  <${b.tagName}> "${t.substring(0, 40)}"`);
         }
-    },
-
-    // Token tracking API
-    tokens: {
-        /** Сводка текущей сессии */
-        session: () => getSessionSummary(),
-        /** Сводка за период ('today'|'week'|'month'|'all') */
-        period: (p) => getPeriodSummary(p || 'today'),
-        /** Данные для графика */
-        chart: (gran, count) => getChartData(gran || 'hours', count || 24),
-        /** Очистить все данные */
-        clear: () => clearTokenStore(),
-        /** Показать/скрыть панель */
-        panel: () => toggleTokenPanel(),
-        /** Экспорт данных в JSON */
-        export: () => {
-            const data = loadTokenRecords();
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = `tokens_${new Date().toISOString().slice(0,10)}.json`;
-            a.click(); URL.revokeObjectURL(url);
-            log('[TOKENS] Данные экспортированы');
-        }
     }
 };
 
-log('=== Antigravity Auto-Retry v2.2 + Token Tracking ===');
-log('Badge: ↻ = retry toggle | 📊 = token stats');
+log('=== Antigravity Auto-Retry v3.0 ===');
+log('Badge: ↻ = retry toggle');

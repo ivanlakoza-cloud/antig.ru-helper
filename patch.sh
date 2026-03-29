@@ -78,4 +78,4 @@ echo "============================================"
 echo ""
 echo "Logs: DevTools (Cmd+Shift+I) - Console"
 echo "API: window.__autoRetry"
-echo "Tokens: window.__autoRetry.tokens"
+
