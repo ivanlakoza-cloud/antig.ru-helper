@@ -15,7 +15,57 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-set "AG_DIR=C:\Antigravity\resources\app"
+:: ===== Автоопределение пути Antigravity =====
+set "AG_DIR="
+
+:: Вариант 1: C:\Antigravity
+if exist "C:\Antigravity\resources\app\product.json" set "AG_DIR=C:\Antigravity\resources\app"
+
+:: Вариант 2: Program Files
+if not defined AG_DIR if exist "C:\Program Files\Antigravity\resources\app\product.json" set "AG_DIR=C:\Program Files\Antigravity\resources\app"
+
+:: Вариант 3: LocalAppData\Programs\antigravity
+if not defined AG_DIR if exist "%LOCALAPPDATA%\Programs\antigravity\resources\app\product.json" set "AG_DIR=%LOCALAPPDATA%\Programs\antigravity\resources\app"
+
+:: Вариант 4: LocalAppData\Programs\Antigravity
+if not defined AG_DIR if exist "%LOCALAPPDATA%\Programs\Antigravity\resources\app\product.json" set "AG_DIR=%LOCALAPPDATA%\Programs\Antigravity\resources\app"
+
+:: Вариант 5: LocalAppData\antigravity
+if not defined AG_DIR if exist "%LOCALAPPDATA%\antigravity\resources\app\product.json" set "AG_DIR=%LOCALAPPDATA%\antigravity\resources\app"
+
+:: Вариант 6: Поиск по диску C
+if not defined AG_DIR (
+    echo [INFO] Стандартные пути не найдены, ищу Antigravity...
+    for /f "delims=" %%i in ('where /r "%LOCALAPPDATA%" product.json 2^>nul ^| findstr /i "antigravity\\resources\\app\\product.json"') do (
+        set "AG_DIR=%%~dpi"
+        goto :found
+    )
+    for /f "delims=" %%i in ('where /r "C:\Program Files" product.json 2^>nul ^| findstr /i "antigravity\\resources\\app\\product.json"') do (
+        set "AG_DIR=%%~dpi"
+        goto :found
+    )
+)
+
+:found
+:: Убрать завершающий слеш если есть
+if defined AG_DIR if "%AG_DIR:~-1%"=="\" set "AG_DIR=%AG_DIR:~0,-1%"
+
+if not defined AG_DIR (
+    echo [ОШИБКА] Antigravity не найден!
+    echo.
+    echo Укажите путь вручную. Введите путь к папке resources\app:
+    echo Например: C:\Users\UserName\AppData\Local\Programs\antigravity\resources\app
+    echo.
+    set /p "AG_DIR=Путь: "
+    if not exist "!AG_DIR!\product.json" (
+        echo [ОШИБКА] product.json не найден по указанному пути.
+        pause
+        exit /b 1
+    )
+)
+
+echo [OK] Antigravity: %AG_DIR%
+
 set "WB_DIR=%AG_DIR%\out\vs\code\electron-browser\workbench"
 set "HTML_FILE=%WB_DIR%\workbench-jetski-agent.html"
 set "RETRY_JS=%WB_DIR%\auto-retry.js"
@@ -23,10 +73,8 @@ set "PRODUCT_JSON=%AG_DIR%\product.json"
 set "SRC_DIR=%~dp0"
 set "BUNDLE=%SRC_DIR%dist\auto-retry.bundle.js"
 
-:: Проверка Antigravity
-if not exist "%AG_DIR%" (
-    echo [ОШИБКА] Antigravity не найден: %AG_DIR%
-    echo Убедитесь, что Antigravity установлен.
+if not exist "%HTML_FILE%" (
+    echo [ОШИБКА] Файл workbench не найден: %HTML_FILE%
     pause
     exit /b 1
 )
@@ -82,6 +130,6 @@ echo     - Auto-retry при ошибках 429/502/503
 echo     - Auto-click "Try again" / "Retry" / "Run"
 echo     - Подавление звуков ошибок
 echo.
-echo   Откат: запустите uninstall.bat
+echo   Удаление: запустите uninstall.bat
 echo.
 pause

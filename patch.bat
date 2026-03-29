@@ -4,7 +4,21 @@ echo   Antigravity Auto-Retry Patcher v3.0
 echo ============================================
 echo.
 
-set "AG_DIR=C:\Antigravity\resources\app"
+:: ===== Автоопределение пути Antigravity =====
+set "AG_DIR="
+if exist "C:\Antigravity\resources\app\product.json" set "AG_DIR=C:\Antigravity\resources\app"
+if not defined AG_DIR if exist "C:\Program Files\Antigravity\resources\app\product.json" set "AG_DIR=C:\Program Files\Antigravity\resources\app"
+if not defined AG_DIR if exist "%LOCALAPPDATA%\Programs\antigravity\resources\app\product.json" set "AG_DIR=%LOCALAPPDATA%\Programs\antigravity\resources\app"
+if not defined AG_DIR if exist "%LOCALAPPDATA%\Programs\Antigravity\resources\app\product.json" set "AG_DIR=%LOCALAPPDATA%\Programs\Antigravity\resources\app"
+if not defined AG_DIR if exist "%LOCALAPPDATA%\antigravity\resources\app\product.json" set "AG_DIR=%LOCALAPPDATA%\antigravity\resources\app"
+
+if not defined AG_DIR (
+    echo [ОШИБКА] Antigravity не найден!
+    set /p "AG_DIR=Введите путь к resources\app: "
+)
+
+echo [OK] Antigravity: %AG_DIR%
+
 set "WB_DIR=%AG_DIR%\out\vs\code\electron-browser\workbench"
 set "HTML_FILE=%WB_DIR%\workbench-jetski-agent.html"
 set "RETRY_JS=%WB_DIR%\auto-retry.js"
@@ -13,7 +27,7 @@ set "SRC_DIR=%~dp0"
 set "BUNDLE=%SRC_DIR%dist\auto-retry.bundle.js"
 
 if not exist "%AG_DIR%" (
-    echo [ERROR] Antigravity not found at %AG_DIR%
+    echo [ОШИБКА] Путь не существует: %AG_DIR%
     pause
     exit /b 1
 )
@@ -22,7 +36,7 @@ if not exist "%BUNDLE%" (
     echo [INFO] Bundle not found. Building...
     node "%SRC_DIR%build.js"
     if not exist "%BUNDLE%" (
-        echo [ERROR] Build failed!
+        echo [ОШИБКА] Build failed!
         pause
         exit /b 1
     )
@@ -48,7 +62,7 @@ powershell -Command "$c = Get-Content '%HTML_FILE%' -Raw; $tag = '<script src=\"
 
 findstr /C:"auto-retry.js" "%HTML_FILE%" >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [ERROR] Failed to inject script!
+    echo [ОШИБКА] Failed to inject script!
     echo Restoring backup...
     copy /Y "%HTML_FILE%.bak" "%HTML_FILE%" >nul
     pause

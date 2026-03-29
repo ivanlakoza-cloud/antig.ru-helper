@@ -4,7 +4,19 @@ echo.
 echo   AntiG.ru Helper — Удаление
 echo.
 
-set "AG_DIR=C:\Antigravity\resources\app"
+:: ===== Автоопределение пути Antigravity =====
+set "AG_DIR="
+if exist "C:\Antigravity\resources\app\product.json" set "AG_DIR=C:\Antigravity\resources\app"
+if not defined AG_DIR if exist "C:\Program Files\Antigravity\resources\app\product.json" set "AG_DIR=C:\Program Files\Antigravity\resources\app"
+if not defined AG_DIR if exist "%LOCALAPPDATA%\Programs\antigravity\resources\app\product.json" set "AG_DIR=%LOCALAPPDATA%\Programs\antigravity\resources\app"
+if not defined AG_DIR if exist "%LOCALAPPDATA%\Programs\Antigravity\resources\app\product.json" set "AG_DIR=%LOCALAPPDATA%\Programs\Antigravity\resources\app"
+if not defined AG_DIR if exist "%LOCALAPPDATA%\antigravity\resources\app\product.json" set "AG_DIR=%LOCALAPPDATA%\antigravity\resources\app"
+
+if not defined AG_DIR (
+    echo [ОШИБКА] Antigravity не найден.
+    set /p "AG_DIR=Введите путь к resources\app: "
+)
+
 set "WB_DIR=%AG_DIR%\out\vs\code\electron-browser\workbench"
 set "HTML_FILE=%WB_DIR%\workbench-jetski-agent.html"
 set "RETRY_JS=%WB_DIR%\auto-retry.js"
