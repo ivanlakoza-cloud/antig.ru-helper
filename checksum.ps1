@@ -21,6 +21,21 @@ if (!(Test-Path $ProductJson)) {
     exit 1
 }
 
+# Determine the key based on filename
+$fileName = [System.IO.Path]::GetFileName($HtmlFile)
+switch ($fileName) {
+    "workbench.html" {
+        $key = "vs/code/electron-browser/workbench/workbench.html"
+    }
+    "workbench-jetski-agent.html" {
+        $key = "vs/code/electron-browser/workbench/workbench-jetski-agent.html"
+    }
+    default {
+        Write-Host "[ERROR] Unknown HTML file: $fileName" -ForegroundColor Red
+        exit 1
+    }
+}
+
 # Compute SHA256 base64 hash
 $bytes = [System.IO.File]::ReadAllBytes($HtmlFile)
 $sha = [System.Security.Cryptography.SHA256]::Create()
@@ -30,29 +45,22 @@ $hash = [Convert]::ToBase64String($hashBytes)
 # Read product.json
 $content = [System.IO.File]::ReadAllText($ProductJson)
 
-# Check if the pattern exists at all
-$pattern = '("vs/code/electron-browser/workbench/workbench-jetski-agent\.html": ")([^"]+)(")'
+# Escape key for regex
+$escapedKey = [regex]::Escape($key)
+
+# Check if the pattern exists
+$pattern = "(""$escapedKey"": "")([^""]+)("")"
 $match = [regex]::Match($content, $pattern)
 
 if (!$match.Success) {
-    Write-Host "[WARN] Checksum entry not found in product.json" -ForegroundColor Yellow
-    Write-Host "       Looking for: workbench-jetski-agent.html" -ForegroundColor Yellow
-    
-    # Debug: show what keys exist
-    $found = [regex]::Matches($content, '"(vs/code/[^"]*workbench[^"]*)"')
-    if ($found.Count -gt 0) {
-        Write-Host "       Found workbench entries:" -ForegroundColor Yellow
-        foreach ($m in $found) {
-            Write-Host "         $($m.Groups[1].Value)" -ForegroundColor Yellow
-        }
-    }
-    exit 1
+    Write-Host "      $fileName - no checksum entry found (skipping)" -ForegroundColor Yellow
+    exit 0
 }
 
 $oldHash = $match.Groups[2].Value
 
 if ($oldHash -eq $hash) {
-    Write-Host "      Checksum already up to date: $hash" -ForegroundColor Green
+    Write-Host "      $fileName - checksum OK" -ForegroundColor Green
     exit 0
 }
 
@@ -60,4 +68,4 @@ if ($oldHash -eq $hash) {
 $replacement = '${1}' + $hash + '${3}'
 $newContent = [regex]::Replace($content, $pattern, $replacement)
 [System.IO.File]::WriteAllText($ProductJson, $newContent)
-Write-Host "      Checksum: $hash" -ForegroundColor Green
+Write-Host "      $fileName - $hash" -ForegroundColor Green
