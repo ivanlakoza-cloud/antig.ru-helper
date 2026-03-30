@@ -143,27 +143,7 @@ copy /Y "%PRODUCT_JSON%" "%PRODUCT_JSON%.bak" >nul
 echo       Backups created.
 
 :: Inject <script> tag before jetskiAgent.js
-powershell -Command ^
-    "$c = [System.IO.File]::ReadAllText('%HTML_FILE%');" ^
-    "$tag = '<script src=\"./auto-retry.js\"></script>';" ^
-    "$target = '<script src=\"./jetskiAgent.js\" type=\"module\"></script>';" ^
-    "if ($c.Contains($target)) {" ^
-    "    $c = $c.Replace($target, $tag + [char]10 + $target);" ^
-    "    [System.IO.File]::WriteAllText('%HTML_FILE%', $c);" ^
-    "    Write-Host '      Script tag injected.'" ^
-    "} else {" ^
-    "    Write-Host '[WARN] Target script tag not found in HTML.';" ^
-    "    Write-Host '       Trying alternative injection...';" ^
-    "    $headEnd = $c.IndexOf('</head>');" ^
-    "    if ($headEnd -gt 0) {" ^
-    "        $c = $c.Insert($headEnd, $tag + [char]10);" ^
-    "        [System.IO.File]::WriteAllText('%HTML_FILE%', $c);" ^
-    "        Write-Host '      Injected before </head>.'" ^
-    "    } else {" ^
-    "        Write-Host '[ERROR] Cannot find injection point!';" ^
-    "        exit 1" ^
-    "    }" ^
-    "}"
+powershell -ExecutionPolicy Bypass -Command "$c = [System.IO.File]::ReadAllText('%HTML_FILE%'); $tag = '<script src=\"./auto-retry.js\"></script>'; $target = '<script src=\"./jetskiAgent.js\" type=\"module\"></script>'; if ($c.Contains($target)) { $c = $c.Replace($target, $tag + [char]10 + $target); [System.IO.File]::WriteAllText('%HTML_FILE%', $c); Write-Host '      Script tag injected.' } else { Write-Host '[WARN] Target not found, trying </head>...'; $i = $c.IndexOf('</head>'); if ($i -gt 0) { $c = $c.Insert($i, $tag + [char]10); [System.IO.File]::WriteAllText('%HTML_FILE%', $c); Write-Host '      Injected before </head>.' } else { Write-Host '[ERROR] Cannot find injection point!'; exit 1 } }"
 
 :: Verify injection
 findstr /C:"auto-retry.js" "%HTML_FILE%" >nul 2>&1
@@ -178,14 +158,7 @@ if %errorlevel% neq 0 (
 :update_checksum
 :: ===== Step 4: Update checksum in product.json =====
 echo [4/4] Updating checksum...
-powershell -Command ^
-    "$bytes = [System.IO.File]::ReadAllBytes('%HTML_FILE%');" ^
-    "$sha = [System.Security.Cryptography.SHA256]::Create();" ^
-    "$hash = [Convert]::ToBase64String($sha.ComputeHash($bytes));" ^
-    "$c = [System.IO.File]::ReadAllText('%PRODUCT_JSON%');" ^
-    "$c = [regex]::Replace($c, '(\"vs/code/electron-browser/workbench/workbench-jetski-agent\.html\": \")([^\"]+)(\")', '${1}' + $hash + '${3}');" ^
-    "[System.IO.File]::WriteAllText('%PRODUCT_JSON%', $c);" ^
-    "Write-Host '      Checksum:' $hash"
+powershell -ExecutionPolicy Bypass -Command "$bytes = [System.IO.File]::ReadAllBytes('%HTML_FILE%'); $sha = [System.Security.Cryptography.SHA256]::Create(); $hash = [Convert]::ToBase64String($sha.ComputeHash($bytes)); $c = Get-Content '%PRODUCT_JSON%' -Raw; $c = [regex]::Replace($c, '(\"vs/code/electron-browser/workbench/workbench-jetski-agent\.html\": \")([^\"]+)(\")', '${1}' + $hash + '${3}'); [System.IO.File]::WriteAllText('%PRODUCT_JSON%', $c); Write-Host '      Checksum:' $hash"
 
 if %errorlevel% neq 0 (
     echo [ERROR] Checksum update failed!

@@ -32,13 +32,7 @@ if %errorlevel% neq 0 (
 )
 
 echo [1/3] Removing auto-retry.js from HTML...
-powershell -Command ^
-    "$c = Get-Content '%HTML_FILE%' -Raw;" ^
-    "$c = $c.Replace(\"`n<script src=\"\"./auto-retry.js\"\"></script>\", '');" ^
-    "$c = $c.Replace(\"<script src=\"\"./auto-retry.js\"\"></script>`n\", '');" ^
-    "$c = $c.Replace(\"<script src=\"\"./auto-retry.js\"\"></script>\", '');" ^
-    "[System.IO.File]::WriteAllText('%HTML_FILE%', $c);" ^
-    "Write-Host '      HTML restored.'"
+powershell -ExecutionPolicy Bypass -Command "$c = Get-Content '%HTML_FILE%' -Raw; $c = $c.Replace(\"`n<script src=\"\"./auto-retry.js\"\"></script>\", ''); $c = $c.Replace(\"<script src=\"\"./auto-retry.js\"\"></script>`n\", ''); $c = $c.Replace(\"<script src=\"\"./auto-retry.js\"\"></script>\", ''); [System.IO.File]::WriteAllText('%HTML_FILE%', $c); Write-Host '      HTML restored.'"
 
 :: Verify
 findstr /C:"auto-retry.js" "%HTML_FILE%" >nul 2>&1
@@ -50,15 +44,7 @@ if %errorlevel%==0 (
 )
 
 echo [2/3] Updating checksum in product.json...
-powershell -Command ^
-    "$bytes = [System.IO.File]::ReadAllBytes('%HTML_FILE%');" ^
-    "$sha256 = [System.Security.Cryptography.SHA256]::Create();" ^
-    "$hash = $sha256.ComputeHash($bytes);" ^
-    "$newHash = [Convert]::ToBase64String($hash);" ^
-    "$content = Get-Content '%PRODUCT_JSON%' -Raw;" ^
-    "$content = [regex]::Replace($content, '(\"vs/code/electron-browser/workbench/workbench-jetski-agent\.html\": \")([^\"]+)(\")', '${1}' + $newHash + '${3}');" ^
-    "[System.IO.File]::WriteAllText('%PRODUCT_JSON%', $content);" ^
-    "Write-Host '      Checksum updated:' $newHash"
+powershell -ExecutionPolicy Bypass -Command "$bytes = [System.IO.File]::ReadAllBytes('%HTML_FILE%'); $sha = [System.Security.Cryptography.SHA256]::Create(); $hash = [Convert]::ToBase64String($sha.ComputeHash($bytes)); $c = Get-Content '%PRODUCT_JSON%' -Raw; $c = [regex]::Replace($c, '(\"vs/code/electron-browser/workbench/workbench-jetski-agent\.html\": \")([^\"]+)(\")', '${1}' + $hash + '${3}'); [System.IO.File]::WriteAllText('%PRODUCT_JSON%', $c); Write-Host '      Checksum:' $hash"
 
 echo [3/3] Removing auto-retry.js from Antigravity...
 if exist "%RETRY_JS%" (
