@@ -112,6 +112,9 @@ function initDomClicker() {
             if (STATE.clickCount >= CONFIG.domMaxClicks) return;
             if (!STATE.retryActive) return;
 
+            // Don't auto-click in background windows (prevents focus stealing)
+            if (!document.hasFocus() && !document.hidden) return;
+
             const now = Date.now();
             const delay = Math.max(CONFIG.domClickDelay, CONFIG.domCooldown - (now - STATE.lastClickTime));
 
@@ -127,6 +130,9 @@ function initDomClicker() {
                 pendingClicks.delete(target);
                 if (!document.contains(target) || clickedElements.has(target)) return;
 
+                // Re-check: don't steal focus from other windows
+                if (!document.hasFocus()) return;
+
                 STATE.clickCount++;
                 STATE.lastClickTime = Date.now();
                 clickedElements.add(target);
@@ -134,7 +140,9 @@ function initDomClicker() {
 
                 log(`[DOM] Auto-click! "${target.textContent?.trim()}" (${STATE.clickCount}/${CONFIG.domMaxClicks})`);
                 flashBadge('Auto-retry...', '#d97706', 2000);
-                target.click();
+                
+                // Use dispatchEvent instead of .click() to avoid focus stealing
+                target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
                 clearTimeout(STATE.resetTimer);
                 STATE.resetTimer = setTimeout(() => {
