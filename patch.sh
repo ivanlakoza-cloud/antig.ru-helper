@@ -251,6 +251,23 @@ if [ "$VERIFY" = "1" ]; then
     echo "  [OK] All checks passed!"
 fi
 
+# ===== macOS: Re-sign the app bundle =====
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    APP_PATH="/Applications/Antigravity.app"
+    if [ -d "$APP_PATH" ]; then
+        echo ""
+        echo "[5/5] Re-signing app bundle (macOS)..."
+        $SUDO xattr -rd com.apple.quarantine "$APP_PATH" 2>/dev/null || true
+        $SUDO codesign --force --deep --sign - "$APP_PATH" 2>/dev/null
+        if [ $? -eq 0 ]; then
+            echo "      App re-signed successfully."
+        else
+            echo "[WARN] codesign failed. You may need to allow the app in"
+            echo "       System Settings > Privacy & Security."
+        fi
+    fi
+fi
+
 echo ""
 echo "╔══════════════════════════════════════╗"
 echo "║    Installation complete!            ║"
