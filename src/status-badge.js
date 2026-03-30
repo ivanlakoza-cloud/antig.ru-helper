@@ -102,6 +102,7 @@ function bindBadgeEvents(el) {
 /**
  * Инициализация badge в VS Code status bar
  */
+let _statusBarRetries = 0;
 function initStatusBarItem() {
     const statusBar = document.querySelector(
         '.statusbar-item.right, footer .right-items, ' +
@@ -109,7 +110,9 @@ function initStatusBarItem() {
         '[id="workbench.parts.statusbar"] .right-items'
     );
     if (!statusBar) {
-        setTimeout(initStatusBarItem, 500);
+        if (_statusBarRetries++ < 20) {
+            setTimeout(initStatusBarItem, 500);
+        }
         return;
     }
 
