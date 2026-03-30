@@ -2,7 +2,7 @@
 set -e
 
 echo "╔══════════════════════════════════════╗"
-echo "║   AntiG.ru Helper - Install v4.0    ║"
+echo "║   AntiG.ru Helper - Install v4.1    ║"
 echo "║   No dependencies required          ║"
 echo "╚══════════════════════════════════════╝"
 echo ""
@@ -81,6 +81,16 @@ if [ ! -f "$HTML_FILE" ]; then
     exit 1
 fi
 
+# ===== Detect if sudo is needed =====
+SUDO=""
+if [ ! -w "$WB_DIR" ]; then
+    echo ""
+    echo "[INFO] Write access required. Requesting sudo..."
+    SUDO="sudo"
+    # Validate sudo access upfront
+    sudo -v || { echo "[ERROR] sudo required but not available."; exit 1; }
+fi
+
 # ===== Step 1: Build bundle (pure bash, no Node.js) =====
 echo ""
 echo "[1/4] Building bundle..."
@@ -132,7 +142,7 @@ echo "      OK: $TOTAL_LINES lines, $TOTAL_BYTES bytes"
 
 # ===== Step 2: Copy bundle =====
 echo "[2/4] Copying to Antigravity..."
-cp "$BUNDLE" "$RETRY_JS"
+$SUDO cp "$BUNDLE" "$RETRY_JS"
 echo "      Done."
 
 # ===== Step 3: Inject script tag =====
@@ -140,29 +150,28 @@ if grep -q "auto-retry.js" "$HTML_FILE" 2>/dev/null; then
     echo "[3/4] Patch already in HTML. Updating bundle only."
 else
     echo "[3/4] Installing patch..."
-    cp "$HTML_FILE" "$HTML_FILE.bak"
-    cp "$PRODUCT_JSON" "$PRODUCT_JSON.bak"
+    $SUDO cp "$HTML_FILE" "$HTML_FILE.bak"
+    $SUDO cp "$PRODUCT_JSON" "$PRODUCT_JSON.bak"
     echo "      Backups created."
 
     TARGET='<script src="./jetskiAgent.js" type="module"></script>'
     TAG='<script src="./auto-retry.js"></script>'
 
     if grep -q "$TARGET" "$HTML_FILE"; then
-        # Use sed to inject before jetskiAgent.js
         if [[ "$OSTYPE" == "darwin"* ]]; then
-            sed -i '' "s|$TARGET|$TAG\\
+            $SUDO sed -i '' "s|$TARGET|$TAG\\
 $TARGET|" "$HTML_FILE"
         else
-            sed -i "s|$TARGET|$TAG\n$TARGET|" "$HTML_FILE"
+            $SUDO sed -i "s|$TARGET|$TAG\n$TARGET|" "$HTML_FILE"
         fi
         echo "      Script tag injected."
     else
         echo "[WARN] Target script tag not found. Trying alternative..."
         if [[ "$OSTYPE" == "darwin"* ]]; then
-            sed -i '' "s|</head>|$TAG\\
+            $SUDO sed -i '' "s|</head>|$TAG\\
 </head>|" "$HTML_FILE"
         else
-            sed -i "s|</head>|$TAG\n</head>|" "$HTML_FILE"
+            $SUDO sed -i "s|</head>|$TAG\n</head>|" "$HTML_FILE"
         fi
         echo "      Injected before </head>."
     fi
@@ -170,7 +179,7 @@ $TARGET|" "$HTML_FILE"
     # Verify
     if ! grep -q "auto-retry.js" "$HTML_FILE"; then
         echo "[ERROR] Injection failed!"
-        cp "$HTML_FILE.bak" "$HTML_FILE"
+        $SUDO cp "$HTML_FILE.bak" "$HTML_FILE"
         echo "      Backup restored."
         exit 1
     fi
@@ -181,34 +190,45 @@ echo "[4/4] Updating checksum..."
 
 # Compute SHA256 base64 hash
 if command -v shasum &>/dev/null; then
-    # macOS / BSD
     HASH=$(shasum -a 256 "$HTML_FILE" | awk '{print $1}' | xxd -r -p | base64)
 elif command -v sha256sum &>/dev/null; then
-    # Linux
     HASH=$(sha256sum "$HTML_FILE" | awk '{print $1}' | xxd -r -p | base64)
 else
     echo "[ERROR] No SHA256 tool found (shasum/sha256sum)"
     exit 1
 fi
 
-# Update product.json using python3 (available on macOS and most Linux)
+# Update product.json
 if command -v python3 &>/dev/null; then
+    # Use a temp file to handle sudo writes
+    TMPJSON=$(mktemp)
+    cp "$PRODUCT_JSON" "$TMPJSON"
     python3 -c "
 import re
-with open('$PRODUCT_JSON', 'r') as f: c = f.read()
+with open('$TMPJSON', 'r') as f: c = f.read()
 c = re.sub(r'(\"vs/code/electron-browser/workbench/workbench-jetski-agent\.html\": \")([^\"]+)(\")', r'\g<1>$HASH\g<3>', c)
-with open('$PRODUCT_JSON', 'w') as f: f.write(c)
+with open('$TMPJSON', 'w') as f: f.write(c)
 print('      Checksum:', '$HASH')
 "
+    $SUDO cp "$TMPJSON" "$PRODUCT_JSON"
+    rm -f "$TMPJSON"
 elif command -v perl &>/dev/null; then
-    perl -i -pe "s|(\"vs/code/electron-browser/workbench/workbench-jetski-agent\\.html\": \")[^\"]+(\")|\${1}${HASH}\${2}|" "$PRODUCT_JSON"
+    TMPJSON=$(mktemp)
+    cp "$PRODUCT_JSON" "$TMPJSON"
+    perl -i -pe "s|(\"vs/code/electron-browser/workbench/workbench-jetski-agent\\.html\": \")[^\"]+(\")|\${1}${HASH}\${2}|" "$TMPJSON"
+    $SUDO cp "$TMPJSON" "$PRODUCT_JSON"
+    rm -f "$TMPJSON"
     echo "      Checksum: $HASH"
 elif command -v sed &>/dev/null; then
+    TMPJSON=$(mktemp)
+    cp "$PRODUCT_JSON" "$TMPJSON"
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' "s|\"vs/code/electron-browser/workbench/workbench-jetski-agent.html\": \"[^\"]*\"|\"vs/code/electron-browser/workbench/workbench-jetski-agent.html\": \"$HASH\"|" "$PRODUCT_JSON"
+        sed -i '' "s|\"vs/code/electron-browser/workbench/workbench-jetski-agent.html\": \"[^\"]*\"|\"vs/code/electron-browser/workbench/workbench-jetski-agent.html\": \"$HASH\"|" "$TMPJSON"
     else
-        sed -i "s|\"vs/code/electron-browser/workbench/workbench-jetski-agent.html\": \"[^\"]*\"|\"vs/code/electron-browser/workbench/workbench-jetski-agent.html\": \"$HASH\"|" "$PRODUCT_JSON"
+        sed -i "s|\"vs/code/electron-browser/workbench/workbench-jetski-agent.html\": \"[^\"]*\"|\"vs/code/electron-browser/workbench/workbench-jetski-agent.html\": \"$HASH\"|" "$TMPJSON"
     fi
+    $SUDO cp "$TMPJSON" "$PRODUCT_JSON"
+    rm -f "$TMPJSON"
     echo "      Checksum: $HASH"
 else
     echo "[ERROR] No tool to update JSON (python3/perl/sed not found)"
@@ -236,12 +256,6 @@ echo "╔═══════════════════════�
 echo "║    Installation complete!            ║"
 echo "║    Restart Antigravity to activate.  ║"
 echo "╚══════════════════════════════════════╝"
-echo ""
-echo "  Features:"
-echo "    ⚡ Auto-retry on errors 429/502/503"
-echo "    🔄 Auto-click Try again / Retry / Run"
-echo "    🔇 Error sound muting"
-echo "    📊 Status bar badge"
 echo ""
 echo "  Logs: DevTools (Cmd+Shift+I / Ctrl+Shift+I)"
 echo "  API:  window.__autoRetry"
