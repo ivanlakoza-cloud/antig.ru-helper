@@ -103,6 +103,28 @@ function initDomClicker() {
         }
 
         /**
+         * Проверяет, находится ли элемент в контексте ошибки
+         * (а не в обычном UI типа списка workspace)
+         * @param {Element} el
+         * @returns {boolean}
+         */
+        function isInErrorContext(el) {
+            let container = el;
+            for (let i = 0; i < 8 && container; i++) {
+                const text = (container.textContent || '').toLowerCase();
+                // Если рядом есть текст об ошибке — это retry-кнопка
+                if (CONFIG.errorTexts.some(p => text.includes(p))) return true;
+                // Если это диалог/notification — считаем ошибкой
+                const role = container.getAttribute && container.getAttribute('role');
+                if (role === 'dialog' || role === 'alert' || role === 'alertdialog') return true;
+                const cls = (container.className || '').toLowerCase();
+                if (cls.includes('notification') || cls.includes('error') || cls.includes('dialog')) return true;
+                container = container.parentElement;
+            }
+            return false;
+        }
+
+        /**
          * Запланировать клик по элементу с задержкой и cooldown
          * @param {Element} element - Элемент для клика
          */
@@ -114,6 +136,9 @@ function initDomClicker() {
 
             // Don't auto-click in background windows (prevents focus stealing)
             if (!document.hasFocus() && !document.hidden) return;
+
+            // Only click retry buttons that are in error/notification context
+            if (!isInErrorContext(target)) return;
 
             const now = Date.now();
             const delay = Math.max(CONFIG.domClickDelay, CONFIG.domCooldown - (now - STATE.lastClickTime));
