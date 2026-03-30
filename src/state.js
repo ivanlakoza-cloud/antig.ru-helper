@@ -58,29 +58,3 @@ function retryDelay(attempt) {
     );
     return base + Math.random() * CONFIG.fetchRetryJitter;
 }
-
-/**
- * TrustedTypes policy для обхода CSP в Electron/Antigravity
- * Позволяет безопасно использовать innerHTML
- */
-let _trustedPolicy = null;
-try {
-    if (window.trustedTypes && window.trustedTypes.createPolicy) {
-        _trustedPolicy = window.trustedTypes.createPolicy('autoRetry', {
-            createHTML: (input) => input
-        });
-    }
-} catch(e) {}
-
-/**
- * Безопасная установка innerHTML (совместимо с TrustedTypes)
- * @param {HTMLElement} el - Элемент
- * @param {string} html - HTML строка
- */
-function safeSetHTML(el, html) {
-    if (_trustedPolicy) {
-        el.innerHTML = _trustedPolicy.createHTML(html);
-    } else {
-        el.innerHTML = html;
-    }
-}
