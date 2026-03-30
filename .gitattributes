@@ -1,0 +1,8 @@
+# Ensure shell scripts always have LF line endings
+*.sh text eol=lf
+
+# Bat files use CRLF
+*.bat text eol=crlf
+
+# PowerShell scripts use CRLF
+*.ps1 text eol=crlf

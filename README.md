@@ -2,6 +2,8 @@
 
 Патч для [Antigravity IDE](https://antigravity.dev): автоматический retry при серверных ошибках, auto-click кнопок и подавление звуков.
 
+> **Не требует Node.js, Python или других зависимостей.** Работает на чистом PowerShell (Windows) и bash (macOS/Linux).
+
 ## Что делает
 
 - ⚡ **Auto-retry** — повторяет запросы при ошибках 429/502/503 (exponential backoff)
@@ -9,26 +11,26 @@
 - 🔇 **Mute** — подавляет звуки ошибок при retry
 - 📊 **Badge** — индикатор ON/OFF в статусбаре
 
-## Установка
+## Установка (одна команда)
 
 Откройте терминал (`Ctrl + ~`) и вставьте команду:
 
 ### Windows (PowerShell)
 
 ```powershell
-cd $env:TEMP; Invoke-WebRequest https://github.com/ivanlakoza-cloud/antig.ru-helper/archive/refs/heads/main.zip -OutFile helper.zip; Expand-Archive -Path helper.zip -DestinationPath . -Force; cd antig.ru-helper-main; node build.js; cmd /c install.bat
+cd $env:TEMP; Invoke-WebRequest https://github.com/ivanlakoza-cloud/antig.ru-helper/archive/refs/heads/main.zip -OutFile helper.zip; Expand-Archive -Path helper.zip -DestinationPath . -Force; cd antig.ru-helper-main; cmd /c install.bat
 ```
 
 ### macOS (Terminal)
 
 ```bash
-cd /tmp && curl -sL https://github.com/ivanlakoza-cloud/antig.ru-helper/archive/refs/heads/main.zip -o helper.zip && unzip -o helper.zip && cd antig.ru-helper-main && node build.js && chmod +x patch.sh && ./patch.sh
+cd /tmp && curl -sL https://github.com/ivanlakoza-cloud/antig.ru-helper/archive/refs/heads/main.zip -o helper.zip && unzip -o helper.zip && cd antig.ru-helper-main && chmod +x patch.sh && ./patch.sh
 ```
 
 ### Linux (Terminal)
 
 ```bash
-cd /tmp && curl -sL https://github.com/ivanlakoza-cloud/antig.ru-helper/archive/refs/heads/main.zip -o helper.zip && unzip -o helper.zip && cd antig.ru-helper-main && node build.js && chmod +x patch.sh && ./patch.sh
+cd /tmp && curl -sL https://github.com/ivanlakoza-cloud/antig.ru-helper/archive/refs/heads/main.zip -o helper.zip && unzip -o helper.zip && cd antig.ru-helper-main && chmod +x patch.sh && ./patch.sh
 ```
 
 > После установки **перезапустите Antigravity**.
@@ -42,11 +44,7 @@ uninstall.bat
 
 ## Обновление
 
-```cmd
-cd antig.ru-helper
-git pull
-install.bat
-```
+Просто скачайте и запустите `install.bat` заново → перезапустите IDE.
 
 ## После обновления Antigravity
 
@@ -90,8 +88,10 @@ config.logEnabled = true             // Логи в console
 ## Структура проекта
 
 ```
-├── install.bat              ← Установка (одна команда)
-├── uninstall.bat            ← Удаление
+├── install.bat              ← Установка Windows (одна команда)
+├── patch.sh                 ← Установка macOS/Linux (одна команда)
+├── uninstall.bat            ← Удаление (Windows)
+├── unpatch.sh               ← Удаление (macOS/Linux)
 ├── src/                     ← Исходные модули
 │   ├── config.js            ← Конфигурация
 │   ├── state.js             ← Состояние + логгер
@@ -100,11 +100,20 @@ config.logEnabled = true             // Логи в console
 │   ├── audio-mute.js        ← Подавление звуков
 │   ├── dom-clicker.js       ← DOM auto-click
 │   └── entry.js             ← Точка входа + API
-├── build.js                 ← Сборка
-├── patch.bat / patch.sh     ← Установка (legacy)
-├── unpatch.bat / unpatch.sh ← Откат (legacy)
+├── build.js                 ← Сборка (Node.js, опционально)
+├── patch.bat                ← Установка (legacy)
+├── unpatch.bat              ← Откат (legacy)
 └── CONTRIBUTING.md          ← Для разработчиков
 ```
+
+## Требования
+
+| Компонент | Требуется? |
+|---|---|
+| Node.js | ❌ **Не нужен** |
+| Python | ❌ Не нужен |
+| PowerShell | ✅ Встроен в Windows |
+| bash | ✅ Встроен в macOS/Linux |
 
 ## Кроссплатформенность
 
