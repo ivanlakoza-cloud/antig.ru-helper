@@ -4,6 +4,8 @@ echo.
 echo   AntiG.ru Helper - Uninstall
 echo.
 
+set "SRC_DIR=%~dp0"
+
 :: ===== Auto-detect Antigravity path =====
 set "AG_DIR="
 if exist "C:\Antigravity\resources\app\product.json" set "AG_DIR=C:\Antigravity\resources\app"
@@ -30,10 +32,10 @@ if %errorlevel% neq 0 (
 )
 
 echo [1/3] Removing from HTML...
-powershell -ExecutionPolicy Bypass -Command "$c = Get-Content '%HTML_FILE%' -Raw; $c = $c.Replace(\"`n<script src=\"\"./auto-retry.js\"\"></script>\", ''); $c = $c.Replace(\"<script src=\"\"./auto-retry.js\"\"></script>`n\", ''); $c = $c.Replace(\"<script src=\"\"./auto-retry.js\"\"></script>\", ''); [System.IO.File]::WriteAllText('%HTML_FILE%', $c); Write-Host '      OK'"
+powershell -ExecutionPolicy Bypass -File "%SRC_DIR%remove-inject.ps1" -HtmlFile "%HTML_FILE%"
 
 echo [2/3] Updating checksum...
-powershell -ExecutionPolicy Bypass -Command "$bytes = [System.IO.File]::ReadAllBytes('%HTML_FILE%'); $sha = [System.Security.Cryptography.SHA256]::Create(); $hash = [Convert]::ToBase64String($sha.ComputeHash($bytes)); $c = Get-Content '%PRODUCT_JSON%' -Raw; $c = [regex]::Replace($c, '(\"vs/code/electron-browser/workbench/workbench-jetski-agent\.html\": \")([^\"]+)(\")', '${1}' + $hash + '${3}'); [System.IO.File]::WriteAllText('%PRODUCT_JSON%', $c); Write-Host '      OK'"
+powershell -ExecutionPolicy Bypass -File "%SRC_DIR%checksum.ps1" -HtmlFile "%HTML_FILE%" -ProductJson "%PRODUCT_JSON%"
 
 echo [3/3] Removing file...
 if exist "%RETRY_JS%" del "%RETRY_JS%"
